@@ -1,0 +1,75 @@
+{
+    "manifest_version": 3,
+    "name": "Bili Speed Up Video",
+    "version": "1.0.0",
+    "description": "使用键盘快捷键控制视频倍速播放的Chrome浏览器插件",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "storage"
+    ],
+    "host_permissions": [
+        "https://*.bilibili.com/*",
+        "https://*.youtube.com/*",
+        "https://*.youku.com/*",
+        "https://*.iqiyi.com/*",
+        "https://*.qq.com/*",
+        "*://*/*"
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://*.bilibili.com/*",
+                "https://*.youtube.com/*",
+                "https://*.youku.com/*",
+                "https://*.iqiyi.com/*",
+                "https://*.qq.com/*",
+                "file://*/*",
+                "*://*/*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "action": {
+        "default_popup": "popup.html",
+        "default_title": "Bili Speed Up Video",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "32": "icons/icon32.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "32": "icons/icon32.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "commands": {
+        "speed-up": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+Up"
+            },
+            "description": "加速播放"
+        },
+        "speed-down": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+Down"
+            },
+            "description": "减速播放"
+        },
+        "speed-reset": {
+            "suggested_key": {
+                "default": "Ctrl+Shift+R"
+            },
+            "description": "重置播放速度"
+        }
+    }
+}

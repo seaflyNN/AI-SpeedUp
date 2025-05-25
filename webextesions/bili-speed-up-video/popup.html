@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bili Speed Up Video</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">🎬 视频倍速控制</h1>
+            <p class="subtitle">Bili Speed Up Video</p>
+        </header>
+
+        <main class="main">
+            <!-- 当前状态显示 -->
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="label">当前速度:</span>
+                    <span class="value" id="current-speed">1.0x</span>
+                </div>
+                <div class="status-item">
+                    <span class="label">视频状态:</span>
+                    <span class="value" id="video-status">检测中...</span>
+                </div>
+            </div>
+
+            <!-- 快捷键说明 -->
+            <div class="shortcuts-section">
+                <h3 class="section-title">⌨️ 快捷键</h3>
+                <div class="shortcut-list">
+                    <div class="shortcut-item">
+                        <span class="key">Ctrl + Shift + ↑</span>
+                        <span class="desc">加速播放</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="key">Ctrl + Shift + ↓</span>
+                        <span class="desc">减速播放</span>
+                    </div>
+                    <div class="shortcut-item">
+                        <span class="key">Ctrl + Shift + R</span>
+                        <span class="desc">重置速度</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 手动控制按钮 -->
+            <div class="controls-section">
+                <h3 class="section-title">🎮 手动控制</h3>
+                <div class="control-buttons">
+                    <button class="btn btn-secondary" id="speed-down">减速</button>
+                    <button class="btn btn-primary" id="speed-reset">重置</button>
+                    <button class="btn btn-secondary" id="speed-up">加速</button>
+                </div>
+            </div>
+
+            <!-- 速度预设 -->
+            <div class="presets-section">
+                <h3 class="section-title">⚡ 速度预设</h3>
+                <div class="preset-buttons">
+                    <button class="btn-preset" data-speed="0.5">0.5x</button>
+                    <button class="btn-preset" data-speed="0.75">0.75x</button>
+                    <button class="btn-preset active" data-speed="1.0">1.0x</button>
+                    <button class="btn-preset" data-speed="1.25">1.25x</button>
+                    <button class="btn-preset" data-speed="1.5">1.5x</button>
+                    <button class="btn-preset" data-speed="2.0">2.0x</button>
+                </div>
+            </div>
+
+            <!-- 设置选项 -->
+            <div class="settings-section">
+                <h3 class="section-title">⚙️ 设置</h3>
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-notifications" checked>
+                        <span class="checkmark"></span>
+                        显示速度通知
+                    </label>
+                </div>
+                <div class="setting-item">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="remember-speed">
+                        <span class="checkmark"></span>
+                        记住播放速度
+                    </label>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p class="version">版本 1.0.0</p>
+            <div class="links">
+                <a href="#" id="help-link">帮助</a>
+                <a href="#" id="feedback-link">反馈</a>
+            </div>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

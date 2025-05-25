@@ -1,0 +1,239 @@
+# Chrome扩展开发 .gitignore
+
+# ===========================================
+# Chrome扩展特定文件
+# ===========================================
+
+# 打包后的扩展文件
+*.zip
+*.crx
+*.pem
+
+# Chrome扩展私钥文件
+key.pem
+*.key
+
+# 扩展商店资源
+store-assets/
+screenshots/
+promotional-images/
+
+# ===========================================
+# 开发和构建工具
+# ===========================================
+
+# Node.js 依赖
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# 构建输出目录
+dist/
+build/
+out/
+.output/
+
+# Webpack 构建文件
+.webpack/
+webpack-stats.json
+
+# Rollup 构建文件
+.rollup.cache/
+
+# Vite 构建文件
+.vite/
+
+# ===========================================
+# 编辑器和IDE
+# ===========================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# WebStorm/IntelliJ
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ===========================================
+# 操作系统文件
+# ===========================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.Spotlight-V100
+.Trashes
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+.directory
+.Trash-*
+
+# ===========================================
+# 日志和临时文件
+# ===========================================
+
+# 日志文件
+*.log
+logs/
+*.log.*
+
+# 临时文件
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# 缓存文件
+.cache/
+.parcel-cache/
+.eslintcache
+.stylelintcache
+
+# ===========================================
+# 测试和覆盖率
+# ===========================================
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+.coverage/
+
+# Jest
+.jest/
+
+# ===========================================
+# 环境配置和敏感信息
+# ===========================================
+
+# 环境变量文件
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.*.local
+
+# 配置文件（可能包含敏感信息）
+config.local.js
+config.local.json
+secrets.json
+
+# API密钥和令牌
+api-keys.json
+tokens.json
+credentials.json
+
+# ===========================================
+# 版本控制和备份
+# ===========================================
+
+# Git
+.git/
+.gitattributes
+
+# SVN
+.svn/
+
+# 备份文件
+*.bak
+*.backup
+*.old
+*.orig
+
+# ===========================================
+# 文档和资源
+# ===========================================
+
+# 文档构建输出
+docs/build/
+.docusaurus/
+
+# 图片处理临时文件
+*.psd
+*.ai
+*.sketch
+
+# ===========================================
+# 特定工具配置
+# ===========================================
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettierignore
+
+# TypeScript
+*.tsbuildinfo
+
+# Sass
+.sass-cache/
+
+# PostCSS
+.postcssrc.js
+
+# ===========================================
+# 调试和分析
+# ===========================================
+
+# Chrome DevTools
+.chrome/
+
+# 性能分析文件
+*.cpuprofile
+*.heapprofile
+
+# 调试文件
+debug.log
+*.debug
+
+# ===========================================
+# 自定义排除
+# ===========================================
+
+# 开发时的测试文件
+test-pages/
+demo/
+playground/
+
+# 个人笔记和TODO
+notes.md
+TODO.md
+NOTES.txt
+
+# 本地配置覆盖
+local-config.*
+dev-config.*

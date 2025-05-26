@@ -1,0 +1,21 @@
+[cmake] Running C:\Users\21075\scoop\shims\cmake.exe -S C:/Users/21075/Documents/qml-demo -B C:/Users/21075/Documents/qml-demo/build/Desktop_Qt_6_9_0_llvm_mingw_64_bit-Release "-DQT_QMAKE_EXECUTABLE:FILEPATH=D:/software/Qt/Qt6.9/6.9.0/llvm-mingw_64/bin/qmake.exe" "-DCMAKE_GENERATOR:STRING=Ninja" "-DCMAKE_PREFIX_PATH:PATH=D:/software/Qt/Qt6.9/6.9.0/llvm-mingw_64" "-DCMAKE_BUILD_TYPE:STRING=Release" "-DCMAKE_COLOR_DIAGNOSTICS:BOOL=ON" "-DCMAKE_CXX_FLAGS_INIT:STRING=" "-DCMAKE_CXX_COMPILER:FILEPATH=D:/software/Qt/Qt6.9/Tools/llvm-mingw1706_64/bin/clang++.exe" "-DCMAKE_C_COMPILER:FILEPATH=D:/software/Qt/Qt6.9/Tools/llvm-mingw1706_64/bin/clang.exe" "-DCMAKE_PROJECT_INCLUDE_BEFORE:FILEPATH=C:\Users\21075\Documents\qml-demo\build\Desktop_Qt_6_9_0_llvm_mingw_64_bit-Release/.qtc/package-manager/auto-setup.cmake" in C:\Users\21075\Documents\qml-demo\build\Desktop_Qt_6_9_0_llvm_mingw_64_bit-Release.
+[cmake] -- The CXX compiler identification is Clang 17.0.6
+[cmake] -- Detecting CXX compiler ABI info
+[cmake] -- Detecting CXX compiler ABI info - done
+[cmake] -- Check for working CXX compiler: D:/software/Qt/Qt6.9/Tools/llvm-mingw1706_64/bin/clang++.exe - skipped
+[cmake] -- Detecting CXX compile features
+[cmake] -- Detecting CXX compile features - done
+[cmake] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD
+[cmake] -- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
+[cmake] -- Check if compiler accepts -pthread
+[cmake] -- Check if compiler accepts -pthread - yes
+[cmake] -- Found Threads: TRUE  
+[cmake] -- Performing Test HAVE_STDATOMIC
+[cmake] -- Performing Test HAVE_STDATOMIC - Success
+[cmake] -- Found WrapAtomic: TRUE  
+[cmake] -- Found WrapVulkanHeaders: D:/software/develop/VulkanSDK/1.4.304.1/Include  
+[cmake] -- Configuring done
+[cmake] -- Generating done
+[cmake] -- Build files have been written to: C:/Users/21075/Documents/qml-demo/build/Desktop_Qt_6_9_0_llvm_mingw_64_bit-Release
+[cmake] 
+[cmake] Elapsed time: 00:03.

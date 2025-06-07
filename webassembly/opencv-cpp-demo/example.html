@@ -47,8 +47,20 @@
     
     <button id="testFooBtn" onclick="testFooFunction()" disabled>测试 foo 函数</button>
     <button id="testCFooBtn" onclick="testCFooFunction()" disabled>测试 c_foo 函数</button>
+    <button id="testBarBtn" onclick="testBarFunction()" disabled>测试 bar 函数</button>
+    <button id="testProcessFileBtn" onclick="testProcessFileFunction()" disabled>测试 processFile 函数</button>
     <button id="testAllBtn" onclick="testAllInterfaces()" disabled>测试所有接口</button>
     <button onclick="clearOutput()">清空输出</button>
+    
+    <!-- 文件上传区域 -->
+    <div style="margin: 20px 0; padding: 15px; border: 2px dashed #ccc; border-radius: 8px;">
+        <h3>文件上传测试</h3>
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect()" style="margin: 10px 0;">
+        <button id="testCProcessFileBtn" onclick="testCProcessFileWithFile()" disabled>使用上传文件测试 c_processFile</button>
+        <button id="testWithoutFSBtn" onclick="testWithoutFileSystem()" disabled>测试图像处理(不使用文件系统)</button>
+        <button onclick="createSampleImage()">创建示例图像</button>
+        <div id="fileInfo" style="margin-top: 10px; font-style: italic; color: #666;"></div>
+    </div>
     
     <div id="output"></div>
 
@@ -65,10 +77,28 @@
             outputDiv.textContent = '';
         }
         
+        let currentFile = null;
+        
         function enableButtons() {
             document.getElementById('testFooBtn').disabled = false;
             document.getElementById('testCFooBtn').disabled = false;
+            document.getElementById('testBarBtn').disabled = false;
+            document.getElementById('testProcessFileBtn').disabled = false;
             document.getElementById('testAllBtn').disabled = false;
+            updateFileTestButton();
+        }
+        
+        function updateFileTestButton() {
+            const processFileBtn = document.getElementById('testCProcessFileBtn');
+            const withoutFSBtn = document.getElementById('testWithoutFSBtn');
+            
+            if (processFileBtn && Module) {
+                processFileBtn.disabled = !currentFile;
+            }
+            
+            if (withoutFSBtn && Module) {
+                withoutFSBtn.disabled = !currentFile;
+            }
         }
         
         function testFooFunction() {
@@ -188,6 +218,402 @@
             }
         }
         
+        function handleFileSelect() {
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('fileInfo');
+            
+            if (fileInput.files.length > 0) {
+                currentFile = fileInput.files[0];
+                fileInfo.textContent = `已选择文件: ${currentFile.name} (${currentFile.size} bytes, ${currentFile.type})`;
+                log('文件已选择: ' + currentFile.name);
+                updateFileTestButton();
+            } else {
+                currentFile = null;
+                fileInfo.textContent = '';
+                updateFileTestButton();
+            }
+        }
+        
+        function createSampleImage() {
+            log('=== 创建示例图像 ===');
+            
+            try {
+                // 创建一个简单的测试图像
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 200;
+                const ctx = canvas.getContext('2d');
+                
+                // 绘制彩色方块
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(0, 0, 100, 100);
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(100, 0, 100, 100);
+                ctx.fillStyle = '#0000ff';
+                ctx.fillRect(0, 100, 100, 100);
+                ctx.fillStyle = '#ffff00';
+                ctx.fillRect(100, 100, 100, 100);
+                
+                // 转换为blob并创建文件
+                canvas.toBlob((blob) => {
+                    currentFile = new File([blob], 'sample_image.png', { type: 'image/png' });
+                    document.getElementById('fileInfo').textContent = `已创建示例图像: ${currentFile.name} (${currentFile.size} bytes)`;
+                    log('示例图像创建成功: ' + currentFile.name);
+                    updateFileTestButton();
+                }, 'image/png');
+                
+            } catch (error) {
+                log('创建示例图像失败: ' + error.message);
+            }
+        }
+        
+        function testBarFunction() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            try {
+                log('=== 测试 bar 函数 ===');
+                
+                if (currentFile) {
+                    log('使用当前选择的文件测试 bar 函数...');
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        
+                        // 分配内存
+                        const dataPtr = Module._malloc(uint8Array.length);
+                        if (dataPtr) {
+                            // 复制数据到WASM内存
+                            Module.HEAPU8.set(uint8Array, dataPtr);
+                            
+                            // 调用bar函数
+                            if (Module.bar) {
+                                Module.bar(dataPtr, uint8Array.length);
+                                log('绑定的 bar 函数调用成功！');
+                            } else if (Module._c_bar) {
+                                Module._c_bar(dataPtr, uint8Array.length);
+                                log('C 风格的 c_bar 函数调用成功！');
+                            } else {
+                                log('bar 函数不可用');
+                            }
+                            
+                            // 释放内存
+                            Module._free(dataPtr);
+                        } else {
+                            log('内存分配失败');
+                        }
+                    };
+                    reader.readAsArrayBuffer(currentFile);
+                } else {
+                    log('没有选择文件，使用模拟数据测试...');
+                    const testData = new Uint8Array(1000);
+                    testData.fill(128); // 填充灰色值
+                    
+                    const dataPtr = Module._malloc(testData.length);
+                    if (dataPtr) {
+                        Module.HEAPU8.set(testData, dataPtr);
+                        
+                        if (Module.bar) {
+                            Module.bar(dataPtr, testData.length);
+                            log('绑定的 bar 函数调用成功（模拟数据）！');
+                        } else if (Module._c_bar) {
+                            Module._c_bar(dataPtr, testData.length);
+                            log('C 风格的 c_bar 函数调用成功（模拟数据）！');
+                        }
+                        
+                        Module._free(dataPtr);
+                    }
+                }
+            } catch (error) {
+                log('测试 bar 函数时出错: ' + error.message);
+            }
+        }
+        
+        function testProcessFileFunction() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            try {
+                log('=== 测试 processFile 函数 ===');
+                
+                if (currentFile) {
+                    log('使用当前选择的文件测试 processFile 函数...');
+                    
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const arrayBuffer = e.target.result;
+                        const uint8Array = new Uint8Array(arrayBuffer);
+                        
+                        // 写入虚拟文件系统
+                        const filename = '/tmp/' + currentFile.name;
+                        Module.FS.writeFile(filename, uint8Array);
+                        log('文件已写入虚拟文件系统: ' + filename);
+                        
+                        // 调用processFile函数
+                        if (Module.processFile) {
+                            Module.processFile(filename);
+                            log('绑定的 processFile 函数调用成功！');
+                        } else if (Module._c_processFile) {
+                            Module._c_processFile(filename);
+                            log('C 风格的 c_processFile 函数调用成功！');
+                        } else {
+                            log('processFile 函数不可用');
+                        }
+                        
+                        // 检查处理后的文件
+                        const processedFilename = filename + '_processed.png';
+                        try {
+                            if (Module.FS.analyzePath(processedFilename).exists) {
+                                const processedData = Module.FS.readFile(processedFilename);
+                                log('处理后的文件已生成: ' + processedFilename + ' (大小: ' + processedData.length + ' bytes)');
+                            } else {
+                                log('未找到处理后的文件: ' + processedFilename);
+                            }
+                        } catch (fsError) {
+                            log('检查处理后文件时出错: ' + fsError.message);
+                        }
+                    };
+                    reader.readAsArrayBuffer(currentFile);
+                } else {
+                    log('请先选择一个图像文件');
+                }
+            } catch (error) {
+                log('测试 processFile 函数时出错: ' + error.message);
+            }
+        }
+        
+        function testCProcessFileWithFile() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            if (!currentFile) {
+                log('错误: 请先选择一个图像文件');
+                return;
+            }
+            
+            try {
+                log('=== 使用上传文件测试 c_processFile ===');
+                log('文件信息: ' + currentFile.name + ' (' + currentFile.size + ' bytes)');
+                
+                // 检查文件系统支持
+                if (!Module.FS) {
+                    log('✗ 文件系统不支持，无法使用 processFile 接口');
+                    log('💡 建议: 使用 bar 接口代替，它不需要文件系统支持');
+                    log('💡 或者重新编译项目以包含文件系统支持');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    // 写入虚拟文件系统
+                    const filename = '/tmp/' + currentFile.name;
+                    
+                    try {
+                        // 确保 /tmp 目录存在
+                        if (!Module.FS.analyzePath('/tmp').exists) {
+                            Module.FS.mkdir('/tmp');
+                            log('✓ 创建 /tmp 目录');
+                        }
+                        
+                        Module.FS.writeFile(filename, uint8Array);
+                        log('✓ 文件已写入虚拟文件系统: ' + filename);
+                        
+                        // 详细验证文件写入
+                        if (Module.FS.analyzePath(filename).exists) {
+                            log('✓ 文件存在验证成功');
+                            
+                            // 读取并验证文件内容
+                            const writtenData = Module.FS.readFile(filename);
+                            log('✓ 文件大小验证: ' + writtenData.length + ' bytes (原始: ' + uint8Array.length + ' bytes)');
+                            
+                            // 检查文件头
+                            if (writtenData.length >= 4) {
+                                const header = [];
+                                for (let i = 0; i < Math.min(8, writtenData.length); i++) {
+                                    header.push('0x' + writtenData[i].toString(16).padStart(2, '0'));
+                                }
+                                log('✓ 文件头: ' + header.join(' '));
+                                
+                                // 检查图像格式
+                                if (writtenData[0] === 0x89 && writtenData[1] === 0x50 && writtenData[2] === 0x4E && writtenData[3] === 0x47) {
+                                    log('✓ 检测到 PNG 格式');
+                                } else if (writtenData[0] === 0xFF && writtenData[1] === 0xD8) {
+                                    log('✓ 检测到 JPEG 格式');
+                                } else if (writtenData[0] === 0x42 && writtenData[1] === 0x4D) {
+                                    log('✓ 检测到 BMP 格式');
+                                } else {
+                                    log('⚠️ 未识别的图像格式，将尝试处理');
+                                }
+                            }
+                            
+                            // 调用 c_processFile 函数
+                            if (Module.ccall) {
+                                Module.ccall('c_processFile', null, ['string'], [filename]);
+                                log('✓ 通过 ccall 调用 c_processFile 成功');
+                            } else if (Module._c_processFile) {
+                                Module._c_processFile(filename);
+                                log('✓ 直接调用 _c_processFile 成功');
+                            } else {
+                                log('✗ c_processFile 函数不可用');
+                                return;
+                            }
+                            
+                            // 检查处理结果
+                            setTimeout(() => {
+                                const processedFilename = filename + '_processed.png';
+                                try {
+                                    if (Module.FS.analyzePath(processedFilename).exists) {
+                                        const processedData = Module.FS.readFile(processedFilename);
+                                        log('✓ 处理成功！输出文件: ' + processedFilename + ' (大小: ' + processedData.length + ' bytes)');
+                                        
+                                        // 列出虚拟文件系统中的文件
+                                        log('虚拟文件系统中的文件:');
+                                        const files = Module.FS.readdir('/tmp');
+                                        files.forEach(file => {
+                                            if (file !== '.' && file !== '..') {
+                                                const path = '/tmp/' + file;
+                                                const stat = Module.FS.stat(path);
+                                                log('  - ' + file + ' (大小: ' + stat.size + ' bytes)');
+                                            }
+                                        });
+                                    } else {
+                                        log('✗ 未找到处理后的文件: ' + processedFilename);
+                                    }
+                                } catch (checkError) {
+                                    log('检查处理结果时出错: ' + checkError.message);
+                                }
+                            }, 100); // 给一点时间让处理完成
+                            
+                        } else {
+                            log('✗ 文件写入后验证失败');
+                        }
+                    } catch (fsError) {
+                        log('文件系统操作失败: ' + fsError.message);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    log('文件读取失败');
+                };
+                
+                reader.readAsArrayBuffer(currentFile);
+                
+            } catch (error) {
+                log('测试 c_processFile 时出错: ' + error.message);
+            }
+        }
+        
+        // 添加一个不依赖文件系统的测试函数
+        function testWithoutFileSystem() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            if (!currentFile) {
+                log('错误: 请先选择一个图像文件');
+                return;
+            }
+            
+            try {
+                log('=== 不使用文件系统测试图像处理 ===');
+                log('文件信息: ' + currentFile.name + ' (' + currentFile.size + ' bytes)');
+                log('注意: 由于文件系统不可用，将使用 bar 接口进行测试');
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    log('文件读取成功，数据大小: ' + uint8Array.length + ' bytes');
+                    
+                    // 分配内存
+                    const dataPtr = Module._malloc(uint8Array.length);
+                    if (!dataPtr) {
+                        log('✗ 内存分配失败');
+                        return;
+                    }
+                    
+                    log('✓ 内存分配成功，地址: ' + dataPtr);
+                    
+                    try {
+                        // 复制数据到WASM内存
+                        Module.HEAPU8.set(uint8Array, dataPtr);
+                        log('✓ 数据已复制到WASM内存');
+                        
+                        // 尝试不同的调用方式
+                        let success = false;
+                        
+                        // 1. 尝试绑定的 bar 函数
+                        if (Module.bar && typeof Module.bar === 'function') {
+                            try {
+                                Module.bar(dataPtr, uint8Array.length);
+                                log('✓ 绑定 bar 函数调用成功');
+                                success = true;
+                            } catch (error) {
+                                log('✗ 绑定 bar 函数调用失败: ' + error.message);
+                            }
+                        }
+                        
+                        // 2. 尝试 C 风格的 c_bar 函数
+                        if (!success && Module._c_bar) {
+                            try {
+                                Module._c_bar(dataPtr, uint8Array.length);
+                                log('✓ C 风格 c_bar 函数调用成功');
+                                success = true;
+                            } catch (error) {
+                                log('✗ C 风格 c_bar 函数调用失败: ' + error.message);
+                            }
+                        }
+                        
+                        // 3. 尝试通过 ccall 调用
+                        if (!success && Module.ccall) {
+                            try {
+                                Module.ccall('c_bar', null, ['number', 'number'], [dataPtr, uint8Array.length]);
+                                log('✓ ccall c_bar 函数调用成功');
+                                success = true;
+                            } catch (error) {
+                                log('✗ ccall c_bar 函数调用失败: ' + error.message);
+                            }
+                        }
+                        
+                        if (!success) {
+                            log('✗ 所有 bar 函数调用方式都失败了');
+                            log('可能的原因:');
+                            log('  - 函数没有正确导出');
+                            log('  - 编译时出现问题');
+                            log('  - 函数签名不匹配');
+                        }
+                        
+                    } finally {
+                        // 释放内存
+                        Module._free(dataPtr);
+                        log('✓ 内存已释放');
+                    }
+                };
+                
+                reader.onerror = function() {
+                    log('✗ 文件读取失败');
+                };
+                
+                reader.readAsArrayBuffer(currentFile);
+                
+            } catch (error) {
+                log('测试过程中发生错误: ' + error.message);
+            }
+        }
+        
         function testAllInterfaces() {
             if (!Module) {
                 log('错误: WebAssembly 模块尚未加载');
@@ -212,7 +638,7 @@
             
             // 2. 测试自定义导出函数
             log('2. 检查自定义导出函数:');
-            const customFunctions = ['_c_foo', 'foo'];
+            const customFunctions = ['_c_foo', '_c_bar', '_c_processFile', 'foo', 'bar', 'processFile'];
             customFunctions.forEach(funcName => {
                 if (Module[funcName]) {
                     log('  ✓ ' + funcName + ' - 可用');
@@ -316,8 +742,63 @@
             }
             log('');
             
+            // 7. 测试新增的接口
+            log('7. 测试新增接口:');
+            
+            // 测试 bar 函数
+            if (Module._c_bar && Module._malloc && Module._free) {
+                try {
+                    const testDataSize = 100;
+                    const dataPtr = Module._malloc(testDataSize);
+                    
+                    // 通过 ccall 调用
+                    if (Module.ccall) {
+                        Module.ccall('c_bar', null, ['number', 'number'], [dataPtr, testDataSize]);
+                        log('  ✓ c_bar 函数测试成功 (ccall)');
+                    }
+                    
+                    // 直接调用
+                    Module._c_bar(dataPtr, testDataSize);
+                    log('  ✓ c_bar 函数测试成功 (直接调用)');
+                    
+                    Module._free(dataPtr);
+                } catch (error) {
+                    log('  ✗ c_bar 函数测试失败: ' + error.message);
+                }
+            } else {
+                log('  ○ c_bar 函数不可用');
+            }
+            
+            // 测试 processFile 函数
+            if (Module._c_processFile) {
+                try {
+                    // 创建一个测试文件在虚拟文件系统中
+                    const testData = new Uint8Array([0x89, 0x50, 0x4E, 0x47]); // PNG 头部
+                    Module.FS.writeFile('/tmp/test.png', testData);
+                    
+                    if (Module.ccall) {
+                        Module.ccall('c_processFile', null, ['string'], ['/tmp/test.png']);
+                        log('  ✓ c_processFile 函数测试成功 (ccall)');
+                    }
+                    
+                    Module._c_processFile('/tmp/test.png');
+                    log('  ✓ c_processFile 函数测试成功 (直接调用)');
+                } catch (error) {
+                    log('  ✗ c_processFile 函数测试失败: ' + error.message);
+                }
+            } else {
+                log('  ○ c_processFile 函数不可用');
+            }
+            
+            log('');
+            
             log('=== 接口测试完成 ===');
             log('测试时间: ' + new Date().toLocaleString());
+            
+            if (currentFile) {
+                log('');
+                log('💡 提示: 检测到已选择文件，可以使用"使用上传文件测试 c_processFile"按钮进行文件处理测试');
+            }
         }
         
         // 加载 WebAssembly 模块
@@ -341,7 +822,7 @@
                         log('可用的导出函数:');
                         
                         // 列出一些关键的导出函数
-                        const exports = ['_main', '_c_foo', '_malloc', '_free', 'ccall', 'cwrap'];
+                        const exports = ['_main', '_c_foo', '_c_bar', '_c_processFile', '_malloc', '_free', 'ccall', 'cwrap'];
                         exports.forEach(name => {
                             if (Module[name]) {
                                 log('  ✓ ' + name);
@@ -351,10 +832,32 @@
                         });
                         
                         // 检查绑定函数
-                        if (Module.foo) {
-                            log('  ✓ foo (绑定函数)');
+                        const bindingFunctions = ['foo', 'bar', 'processFile'];
+                        bindingFunctions.forEach(name => {
+                            if (Module[name]) {
+                                log('  ✓ ' + name + ' (绑定函数)');
+                            } else {
+                                log('  ✗ ' + name + ' (绑定函数不可用)');
+                            }
+                        });
+                        
+                        // 检查文件系统支持
+                        if (Module.FS) {
+                            log('  ✓ FS (文件系统支持)');
+                            
+                            // 创建临时目录
+                            try {
+                                if (!Module.FS.analyzePath('/tmp').exists) {
+                                    Module.FS.mkdir('/tmp');
+                                    log('  ✓ 创建 /tmp 目录成功');
+                                } else {
+                                    log('  ✓ /tmp 目录已存在');
+                                }
+                            } catch (e) {
+                                log('  ⚠ 创建 /tmp 目录失败: ' + e.message);
+                            }
                         } else {
-                            log('  ✗ foo (绑定函数不可用)');
+                            log('  ✗ FS (文件系统不支持) - 需要重新编译');
                         }
                         
                         log('\n现在可以测试函数了！');

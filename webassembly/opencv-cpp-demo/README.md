@@ -1,249 +1,163 @@
-# OpenCV WebAssembly 演示项目
+# OpenCV WebAssembly 图像处理演示
 
-这是一个使用 C++ 和 OpenCV 构建的 WebAssembly 项目，可以在浏览器中进行实时图像处理。
+这个项目展示了如何在WebAssembly中处理图像文件，提供了两种不同的接口来处理图像。
 
-## 项目结构
-
-```
-webassembly/opencv-cpp-demo/
-├── 3rd/
-│   └── opencv-4.11/           # OpenCV 库文件
-├── src/
-│   ├── main.cpp              # 主程序入口
-│   ├── opencv_interface.h    # 接口头文件
-│   └── opencv_interface.cpp  # 接口实现
-├── build/                    # 构建输出目录
-├── dist/                     # 最终输出目录
-├── CMakeLists.txt           # CMake 配置文件
-├── build.sh                 # Linux/Mac 构建脚本
-├── build.bat                # Windows 构建脚本
-├── test.html                # 测试网页
-└── README.md                # 说明文档
+## 编译
+```sh
+# 激活 emsdk 环境
+emcmake cmake .. -DCMAKE_BUILD_TYPE=Release ; cmake --build .
 ```
 
 ## 功能特性
 
-### 已实现的功能
+### 1. `bar` 接口 - 内存数据处理
+- 直接处理图像的二进制数据
+- 适用于任何来源的图片（文件上传、网络下载等）
+- 使用 `cv::imdecode` 解码图像数据
 
-1. **基础图像处理**
-   - 高斯模糊
-   - Canny 边缘检测
-   - 中值滤波
-   - 形态学操作
+### 2. `processFile` 接口 - 虚拟文件系统处理
+- 通过文件路径处理图像
+- 需要先将文件写入Emscripten的虚拟文件系统
+- 使用传统的 `cv::imread` 读取文件
+- 包含完整的图像处理流程：灰度转换、高斯模糊、边缘检测
 
-2. **图像变换**
-   - 图像缩放
-   - 图像旋转
-   - 图像翻转
+## 构建项目
 
-3. **颜色空间转换**
-   - BGR 到灰度
-   - BGR 到 RGB
-   - BGR 到 HSV
+### 前置要求
+- Emscripten SDK
+- OpenCV (通过Emscripten构建)
+- CMake
 
-4. **阈值处理**
-   - 二值化
-   - 自适应阈值
-
-### 导出的 JavaScript 接口
-
-- `initialize()` - 初始化模块
-- `processImage()` - 通用图像处理函数
-- `createMat()` - 创建 Mat 对象
-- `destroyMat()` - 销毁 Mat 对象
-- `getMatData()` - 获取 Mat 数据
-- `applyGaussianBlur()` - 高斯模糊
-- `applyCanny()` - Canny 边缘检测
-- `resize()` - 图像缩放
-- `rotate()` - 图像旋转
-- `convertColor()` - 颜色空间转换
-- `threshold()` - 阈值处理
-
-## 环境要求
-
-1. **Emscripten SDK**
-   ```bash
-   # 安装 Emscripten
-   git clone https://github.com/emscripten-core/emsdk.git
-   cd emsdk
-   ./emsdk install latest
-   ./emsdk activate latest
-   source ./emsdk_env.sh
-   ```
-
-2. **CMake** (版本 3.16 或更高)
-
-3. **OpenCV 4.11** (已包含在 3rd 目录中)
-
-## 构建步骤
-
-### Linux/Mac
-
+### 构建步骤
+1. 确保Emscripten环境已设置
+2. 运行构建脚本：
 ```bash
-# 确保已激活 Emscripten 环境
-source /path/to/emsdk/emsdk_env.sh
-
-# 运行构建脚本
 chmod +x build.sh
 ./build.sh
 ```
 
-### Windows
-
-```batch
-# 确保已激活 Emscripten 环境
-call "C:\path\to\emsdk\emsdk_env.bat"
-
-# 运行构建脚本
-build.bat
-```
-
-### 手动构建
-
-```bash
-# 创建构建目录
-mkdir build && cd build
-
-# 配置 CMake
-emcmake cmake .. -DCMAKE_BUILD_TYPE=Release
-
-# 编译
-emmake make -j4
-```
-
 ## 使用方法
 
-1. **构建项目**
-   ```bash
-   ./build.sh
-   ```
-
-2. **启动本地服务器**
-   ```bash
-   # 使用 Python
-   python -m http.server 8000
-   
-   # 或使用 Node.js
-   npx http-server
-   ```
-
-3. **打开浏览器**
-   访问 `http://localhost:8000/test.html`
-
-4. **测试功能**
-   - 上传图片
-   - 选择处理类型
-   - 调整参数
-   - 查看处理结果
-
-## JavaScript 使用示例
-
+### 1. 基本使用
 ```javascript
-// 加载 WebAssembly 模块
+// 等待模块加载
 const module = await OpenCVModule();
 
-// 初始化
-module.initialize();
-
-// 创建 Mat 对象
-const matId = module.createMat(640, 480, module.CV_8UC3);
-
-// 应用高斯模糊
-module.applyGaussianBlur(matId, 15, 2.0, 2.0);
-
-// 应用 Canny 边缘检测
-module.applyCanny(matId, 100, 200);
-
-// 获取处理结果
-const data = module.getMatData(matId);
-const width = module.getMatWidth(matId);
-const height = module.getMatHeight(matId);
-
-// 清理资源
-module.destroyMat(matId);
+// 创建文件处理器
+const fileHandler = new OpenCVFileHandler(module);
 ```
 
-## 性能优化
+### 2. 使用 bar 接口处理文件
+```javascript
+// 通过文件输入获取文件
+const file = fileInput.files[0];
+const arrayBuffer = await file.arrayBuffer();
+const uint8Array = new Uint8Array(arrayBuffer);
 
-1. **编译优化**
-   - 使用 `-O3` 优化级别
-   - 启用 SIMD 指令
-   - 内存对齐优化
+// 分配WASM内存
+const dataPtr = module._malloc(uint8Array.length);
+module.HEAPU8.set(uint8Array, dataPtr);
 
-2. **内存管理**
-   - 及时释放 Mat 对象
-   - 使用内存池
-   - 避免内存碎片
+// 调用处理函数
+module.bar(dataPtr, uint8Array.length);
 
-3. **算法优化**
-   - 选择合适的算法参数
-   - 避免不必要的数据拷贝
-   - 使用 OpenCV 的优化函数
+// 释放内存
+module._free(dataPtr);
+```
+
+### 3. 使用 processFile 接口处理文件
+```javascript
+// 读取文件数据
+const arrayBuffer = await file.arrayBuffer();
+const uint8Array = new Uint8Array(arrayBuffer);
+
+// 写入虚拟文件系统
+const filename = '/tmp/image.png';
+module.FS.writeFile(filename, uint8Array);
+
+// 调用处理函数
+module.processFile(filename);
+
+// 读取处理后的文件
+const processedFilename = filename + '_processed.png';
+if (module.FS.analyzePath(processedFilename).exists) {
+    const processedData = module.FS.readFile(processedFilename);
+    // 使用处理后的数据...
+}
+```
+
+## 接口说明
+
+### C++ 接口
+
+#### `void bar(uint8_t *data, int data_length)`
+- 处理内存中的图像数据
+- 参数：
+  - `data`: 图像数据指针
+  - `data_length`: 数据长度
+
+#### `void processFile(const char* filepath)`
+- 处理虚拟文件系统中的图像文件
+- 参数：
+  - `filepath`: 文件路径
+- 功能：
+  - 加载图像
+  - 转换为灰度图
+  - 应用高斯模糊
+  - 进行边缘检测
+  - 保存处理后的图像
+
+### JavaScript 接口
+
+#### 通过 Emscripten 绑定
+```javascript
+module.bar(dataPtr, dataLength);
+module.processFile(filepath);
+```
+
+#### 通过 C 风格导出
+```javascript
+module.ccall('c_bar', null, ['number', 'number'], [dataPtr, dataLength]);
+module.ccall('c_processFile', null, ['string'], [filepath]);
+```
+
+## 文件结构
+```
+opencv-cpp-demo/
+├── src/
+│   └── main.cpp          # 主要的C++代码
+├── CMakeLists.txt        # CMake配置
+├── build.sh              # 构建脚本
+├── file-handler.js       # JavaScript文件处理工具
+├── index.html            # 演示页面
+└── README.md             # 说明文档
+```
+
+## 运行演示
+
+1. 构建项目后，使用HTTP服务器运行：
+```bash
+python -m http.server 8000
+# 或者
+npx serve .
+```
+
+2. 在浏览器中打开 `http://localhost:8000/index.html`
+
+3. 选择图像文件并测试不同的处理接口
+
+## 注意事项
+
+1. **CORS限制**: 需要通过HTTP服务器运行，不能直接打开HTML文件
+2. **内存管理**: 使用`bar`接口时记得释放分配的内存
+3. **文件格式**: 支持PNG、JPEG、GIF、BMP等常见图像格式
+4. **虚拟文件系统**: `processFile`接口依赖Emscripten的虚拟文件系统
 
 ## 扩展功能
 
-### 添加新的图像处理函数
+你可以轻松扩展现有接口：
 
-1. 在 `opencv_interface.h` 中声明函数
-2. 在 `opencv_interface.cpp` 中实现函数
-3. 在 `main.cpp` 的 `EMSCRIPTEN_BINDINGS` 中导出函数
-4. 重新编译项目
-
-### 示例：添加直方图均衡化
-
-```cpp
-// opencv_interface.h
-int equalizeHist(int matId);
-
-// opencv_interface.cpp
-int equalizeHist(int matId) {
-    auto mat = MatManager::getMat(matId);
-    if (!mat) return -1;
-    
-    try {
-        cv::Mat gray;
-        if (mat->channels() > 1) {
-            cv::cvtColor(*mat, gray, cv::COLOR_BGR2GRAY);
-        } else {
-            gray = *mat;
-        }
-        cv::equalizeHist(gray, *mat);
-        return 0;
-    } catch (...) {
-        return -1;
-    }
-}
-
-// main.cpp
-EMSCRIPTEN_BINDINGS(opencv_module) {
-    // ... 其他绑定
-    function("equalizeHist", &equalizeHist);
-}
-```
-
-## 故障排除
-
-### 常见问题
-
-1. **编译错误**
-   - 检查 Emscripten 环境是否正确激活
-   - 确认 OpenCV 库路径正确
-   - 验证 CMake 版本是否符合要求
-
-2. **运行时错误**
-   - 检查浏览器开发者工具的控制台
-   - 确认 WebAssembly 文件加载成功
-   - 验证函数调用参数是否正确
-
-3. **性能问题**
-   - 检查是否使用了 Release 模式编译
-   - 优化图像尺寸
-   - 减少不必要的数据转换
-
-## 许可证
-
-本项目基于 MIT 许可证开源。
-
-## 贡献
-
- 
+1. 在`processFile`函数中添加更多图像处理算法
+2. 添加新的接口处理特定的图像处理任务
+3. 实现图像结果的返回机制
+4. 添加批量处理功能 

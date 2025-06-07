@@ -1,0 +1,5 @@
+*build*
+3rd/opencv/bin
+3rd/opencv/include
+3rd/opencv/lib
+3rd/opencv/share

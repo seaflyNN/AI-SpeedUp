@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenCV WASM Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #output {
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>OpenCV WebAssembly Demo</h1>
+    <p>这个演示展示了如何在JavaScript中调用导出的C++函数。</p>
+    
+    <button id="testFooBtn" onclick="testFooFunction()" disabled>测试 foo 函数</button>
+    <button id="testCFooBtn" onclick="testCFooFunction()" disabled>测试 c_foo 函数</button>
+    <button id="testAllBtn" onclick="testAllInterfaces()" disabled>测试所有接口</button>
+    <button onclick="clearOutput()">清空输出</button>
+    
+    <div id="output"></div>
+
+    <script>
+        let Module = null;
+        let outputDiv = document.getElementById('output');
+        
+        function log(message) {
+            outputDiv.textContent += message + '\n';
+            console.log(message);
+        }
+        
+        function clearOutput() {
+            outputDiv.textContent = '';
+        }
+        
+        function enableButtons() {
+            document.getElementById('testFooBtn').disabled = false;
+            document.getElementById('testCFooBtn').disabled = false;
+            document.getElementById('testAllBtn').disabled = false;
+        }
+        
+        function testFooFunction() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            try {
+                log('=== 测试绑定的 foo 函数 ===');
+                
+                // 检查是否有绑定的 foo 函数
+                if (typeof Module.foo === 'function') {
+                    // 先检查内存管理函数是否可用
+                    if (Module._malloc && Module._free) {
+                        // 创建一些测试数据
+                        const width = 640;
+                        const height = 480;
+                        const channels = 3;
+                        const dataSize = width * height * channels;
+                        
+                        // 分配内存
+                        const dataPtr = Module._malloc(dataSize);
+                        
+                        if (dataPtr) {
+                            // 调用函数
+                            Module.foo(dataPtr, width, height, channels);
+                            
+                            // 释放内存
+                            Module._free(dataPtr);
+                            
+                            log('绑定的 foo 函数调用成功！');
+                        } else {
+                            log('内存分配失败');
+                        }
+                    } else {
+                        // 尝试直接调用（使用0作为指针）
+                        log('内存管理函数不可用，尝试使用空指针调用...');
+                        Module.foo(0, 640, 480, 3);
+                        log('绑定的 foo 函数调用成功（使用空指针）！');
+                    }
+                } else {
+                    log('绑定的 foo 函数不可用，这是正常的，因为绑定可能没有正确编译');
+                }
+            } catch (error) {
+                log('调用绑定的 foo 函数时出错: ' + error.message);
+            }
+        }
+        
+        function testCFooFunction() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            try {
+                log('=== 测试 C 风格的 c_foo 函数 ===');
+                
+                // 先检查内存管理函数
+                if (Module._malloc && Module._free) {
+                    // 使用 ccall 调用 C 函数
+                    const width = 800;
+                    const height = 600;
+                    const channels = 4;
+                    const dataSize = width * height * channels;
+                    
+                    // 分配内存
+                    const dataPtr = Module._malloc(dataSize);
+                    
+                    if (dataPtr) {
+                        // 使用 ccall 调用函数
+                        Module.ccall('c_foo', null, ['number', 'number', 'number', 'number'], 
+                                   [dataPtr, width, height, channels]);
+                        
+                        // 释放内存
+                        Module._free(dataPtr);
+                        
+                        log('C 风格的 c_foo 函数调用成功！');
+                    } else {
+                        log('内存分配失败');
+                    }
+                } else {
+                    // 尝试使用空指针调用
+                    log('内存管理函数不可用，尝试使用空指针调用...');
+                    Module.ccall('c_foo', null, ['number', 'number', 'number', 'number'], 
+                               [0, 800, 600, 4]);
+                    log('C 风格的 c_foo 函数调用成功（使用空指针）！');
+                }
+            } catch (error) {
+                log('调用 C 风格的 c_foo 函数时出错: ' + error.message);
+                
+                // 尝试直接调用导出的函数
+                try {
+                    log('尝试直接调用 _c_foo...');
+                    if (Module._malloc && Module._free) {
+                        const width = 800;
+                        const height = 600;
+                        const channels = 4;
+                        const dataSize = width * height * channels;
+                        const dataPtr = Module._malloc(dataSize);
+                        
+                        if (dataPtr) {
+                            Module._c_foo(dataPtr, width, height, channels);
+                            Module._free(dataPtr);
+                            log('直接调用 _c_foo 成功！');
+                        } else {
+                            log('内存分配失败');
+                        }
+                    } else {
+                        // 使用空指针
+                        Module._c_foo(0, 800, 600, 4);
+                        log('直接调用 _c_foo 成功（使用空指针）！');
+                    }
+                } catch (e) {
+                    log('直接调用也失败: ' + e.message);
+                }
+            }
+        }
+        
+        function testAllInterfaces() {
+            if (!Module) {
+                log('错误: WebAssembly 模块尚未加载');
+                return;
+            }
+            
+            log('=== 开始测试所有接口 ===');
+            log('时间: ' + new Date().toLocaleString());
+            log('');
+            
+            // 1. 测试基本的导出函数
+            log('1. 检查基本导出函数:');
+            const basicFunctions = ['_main', '_malloc', '_free', 'ccall', 'cwrap'];
+            basicFunctions.forEach(funcName => {
+                if (Module[funcName]) {
+                    log('  ✓ ' + funcName + ' - 可用');
+                } else {
+                    log('  ✗ ' + funcName + ' - 不可用');
+                }
+            });
+            log('');
+            
+            // 2. 测试自定义导出函数
+            log('2. 检查自定义导出函数:');
+            const customFunctions = ['_c_foo', 'foo'];
+            customFunctions.forEach(funcName => {
+                if (Module[funcName]) {
+                    log('  ✓ ' + funcName + ' - 可用');
+                } else {
+                    log('  ✗ ' + funcName + ' - 不可用');
+                }
+            });
+            log('');
+            
+            // 3. 测试内存分配和释放
+            log('3. 测试内存管理:');
+            try {
+                const testSize = 1024;
+                const ptr = Module._malloc(testSize);
+                if (ptr && ptr !== 0) {
+                    log('  ✓ 内存分配成功 (地址: ' + ptr + ')');
+                    Module._free(ptr);
+                    log('  ✓ 内存释放成功');
+                } else {
+                    log('  ✗ 内存分配失败');
+                }
+            } catch (error) {
+                log('  ✗ 内存管理测试失败: ' + error.message);
+            }
+            log('');
+            
+            // 4. 测试 C 风格函数调用
+            log('4. 测试 C 风格函数调用:');
+            if (Module._c_foo && Module._malloc && Module._free) {
+                try {
+                    const width = 100, height = 100, channels = 3;
+                    const dataSize = width * height * channels;
+                    const dataPtr = Module._malloc(dataSize);
+                    
+                    // 使用 ccall 调用
+                    if (Module.ccall) {
+                        Module.ccall('c_foo', null, ['number', 'number', 'number', 'number'], 
+                                   [dataPtr, width, height, channels]);
+                        log('  ✓ ccall 调用 c_foo 成功');
+                    }
+                    
+                    // 直接调用
+                    Module._c_foo(dataPtr, width, height, channels);
+                    log('  ✓ 直接调用 _c_foo 成功');
+                    
+                    Module._free(dataPtr);
+                    log('  ✓ 参数: width=' + width + ', height=' + height + ', channels=' + channels);
+                } catch (error) {
+                    log('  ✗ C 函数调用失败: ' + error.message);
+                }
+            } else {
+                log('  ✗ C 函数不可用');
+            }
+            log('');
+            
+            // 5. 测试绑定函数（如果可用）
+            log('5. 测试 Emscripten 绑定函数:');
+            if (Module.foo && typeof Module.foo === 'function') {
+                try {
+                    const width = 200, height = 150, channels = 4;
+                    const dataSize = width * height * channels;
+                    const dataPtr = Module._malloc(dataSize);
+                    
+                    Module.foo(dataPtr, width, height, channels);
+                    Module._free(dataPtr);
+                    log('  ✓ 绑定函数 foo 调用成功');
+                    log('  ✓ 参数: width=' + width + ', height=' + height + ', channels=' + channels);
+                } catch (error) {
+                    log('  ✗ 绑定函数调用失败: ' + error.message);
+                }
+            } else {
+                log('  ○ 绑定函数不可用 (这是正常的)');
+            }
+            log('');
+            
+            // 6. 性能测试
+            log('6. 简单性能测试:');
+            if (Module._c_foo && Module._malloc && Module._free) {
+                try {
+                    const testCount = 1000;
+                    const startTime = performance.now();
+                    
+                    for (let i = 0; i < testCount; i++) {
+                        const dataPtr = Module._malloc(100);
+                        Module._c_foo(dataPtr, 10, 10, 1);
+                        Module._free(dataPtr);
+                    }
+                    
+                    const endTime = performance.now();
+                    const totalTime = endTime - startTime;
+                    const avgTime = totalTime / testCount;
+                    
+                    log('  ✓ 执行 ' + testCount + ' 次调用');
+                    log('  ✓ 总时间: ' + totalTime.toFixed(2) + ' ms');
+                    log('  ✓ 平均时间: ' + avgTime.toFixed(4) + ' ms/次');
+                } catch (error) {
+                    log('  ✗ 性能测试失败: ' + error.message);
+                }
+            } else {
+                log('  ✗ 无法进行性能测试，函数不可用');
+            }
+            log('');
+            
+            log('=== 接口测试完成 ===');
+            log('测试时间: ' + new Date().toLocaleString());
+        }
+        
+        // 加载 WebAssembly 模块
+        log('正在加载 WebAssembly 模块...');
+        
+        // 加载脚本
+        const script = document.createElement('script');
+        script.src = 'dist/opencv-wasm-demo.js';
+        script.onload = function() {
+            log('JavaScript 脚本加载成功');
+            
+            // 检查OpenCVModule是否可用
+            if (typeof OpenCVModule === 'function') {
+                log('OpenCVModule 函数可用，开始初始化...');
+                
+                // 模块配置
+                const moduleConfig = {
+                    onRuntimeInitialized: function() {
+                        Module = this;
+                        log('WebAssembly 模块加载成功！');
+                        log('可用的导出函数:');
+                        
+                        // 列出一些关键的导出函数
+                        const exports = ['_main', '_c_foo', '_malloc', '_free', 'ccall', 'cwrap'];
+                        exports.forEach(name => {
+                            if (Module[name]) {
+                                log('  ✓ ' + name);
+                            } else {
+                                log('  ✗ ' + name + ' (不可用)');
+                            }
+                        });
+                        
+                        // 检查绑定函数
+                        if (Module.foo) {
+                            log('  ✓ foo (绑定函数)');
+                        } else {
+                            log('  ✗ foo (绑定函数不可用)');
+                        }
+                        
+                        log('\n现在可以测试函数了！');
+                        enableButtons();
+                    },
+                    print: function(text) {
+                        log('WASM输出: ' + text);
+                    },
+                    printErr: function(text) {
+                        log('WASM错误: ' + text);
+                    }
+                };
+                
+                // 初始化模块
+                OpenCVModule(moduleConfig).then(function(module) {
+                    log('模块初始化完成');
+                }).catch(function(error) {
+                    log('模块初始化失败: ' + error);
+                });
+                
+            } else {
+                log('错误: OpenCVModule 函数不可用');
+                log('生成的JS文件可能有问题');
+            }
+        };
+        script.onerror = function() {
+            log('错误: 无法加载 WebAssembly 脚本文件');
+            log('请确保服务器正在运行，并且文件路径正确');
+            log('当前URL: ' + window.location.href);
+            log('尝试访问: ' + window.location.origin + '/dist/opencv-wasm-demo.js');
+        };
+        document.head.appendChild(script);
+    </script>
+</body>
+</html> 

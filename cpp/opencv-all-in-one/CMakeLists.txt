@@ -13,9 +13,11 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# 设置构建类型为Debug，并限制配置类型
-set(CMAKE_BUILD_TYPE Debug)
-set(CMAKE_CONFIGURATION_TYPES "Debug" CACHE STRING "限制构建配置" FORCE)
+# 设置默认构建类型（当不指定时使用）
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Debug)
+endif()
+# 注释：支持多配置构建（Debug 和 Release）
 
 # 设置 OpenCV 源码和安装目录
 set(OpenCV_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/3rd/opencv-4.10.0")

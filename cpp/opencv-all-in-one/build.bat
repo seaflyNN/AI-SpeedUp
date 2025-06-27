@@ -23,7 +23,7 @@ echo 📋 第一阶段：配置项目并构建 OpenCV...
 echo.
 
 :: 第一阶段配置项目（仅构建OpenCV）
-cmake -S . -B build -DBUILDING_OPENCV_ONLY=ON -DCMAKE_BUILD_TYPE=Debug
+cmake -S . -B build -DBUILDING_OPENCV_ONLY=ON
 if !errorlevel! neq 0 (
     echo ❌ CMake 配置失败！
     goto :error

@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window with drag-drop listen permission",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:event:allow-listen"
+  ]
+} 
